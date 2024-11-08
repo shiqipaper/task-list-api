@@ -3,7 +3,7 @@ from flask import Blueprint, abort, make_response,request, Response
 from app.models.task import Task
 from ..db import db
 from datetime import datetime
-from .route_utilities import validate_model
+from .route_utilities import validate_model, create_model
 import requests
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix = "/tasks")
@@ -11,22 +11,23 @@ tasks_bp = Blueprint("tasks_bp", __name__, url_prefix = "/tasks")
 @tasks_bp.post("")
 def create_task():
     request_body = request.get_json()
+    return {"task": create_model(Task, request_body)}, 201
 
-    try:
-        new_task = Task.from_dict(request_body)
+    # try:
+    #     new_task = Task.from_dict(request_body)
 
-    except KeyError as e:
-        response = {"details": "Invalid data"}
-        abort(make_response(response, 400))
+    # except KeyError as error:
+    #     response = {"details": "Invalid data"}
+    #     abort(make_response(response, 400))
 
-    db.session.add(new_task)
-    db.session.commit()
+    # db.session.add(new_task)
+    # db.session.commit()
 
-    response = new_task.to_dict()
-    return {"task": response}, 201
+    # response = new_task.to_dict()
+    # return {"task": response}, 201
 
 @tasks_bp.patch("/<task_id>/mark_incomplete")
-def update_incomplete_task(task_id):
+def mark_incomplete_task(task_id):
     task = validate_model(Task, task_id)
     task.completed_at = None
     
@@ -37,7 +38,7 @@ def update_incomplete_task(task_id):
     return {"task": response}, 200 
 
 @tasks_bp.patch("/<task_id>/mark_complete")
-def markt_taskk_complete(task_id):
+def mark_task_complete(task_id):
     task = validate_model(Task, task_id)
     task.completed_at = datetime.now()
 
@@ -57,8 +58,8 @@ def markt_taskk_complete(task_id):
 
 @tasks_bp.get("")
 def get_all_tasks():
-    query = db.select(Task)
     sort_title_param = request.args.get("sort", "asc")
+
     if sort_title_param == "desc":
         tasks = Task.query.order_by(Task.title.desc())
     else:
